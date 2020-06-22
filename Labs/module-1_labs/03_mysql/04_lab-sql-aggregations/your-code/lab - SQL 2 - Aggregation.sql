@@ -89,22 +89,19 @@ ORDER BY plain_english;
 -- 8. From the previous result, modify you query so that it returns only one row, with a column for incoming amount, outgoing amount and the difference
 
 SELECT 
-	t_account,
-	(SELECT total_amound FROM tt WHERE plain_english = 'INCOMING')		AS incoming,
-	(SELECT total_amound FROM tt WHERE plain_english = 'OUTCOMING')		AS outcoming,
-	(INCOMING - OUTCOMING)														AS diference
-FROM (SELECT 
-			t.account_id						AS t_account,
-			CASE
-				WHEN t.type = 'PRIJEM' THEN 'INCOMING'
-				WHEN t.type = 'VYDAJ' THEN 'OUTGOING'
-			END 								AS plain_english,
-			ROUND(SUM(t.amount))		 	AS total_amount
-			FROM trans t
-			WHERE account_id = 396
-			GROUP BY 
-				plain_english
-			ORDER BY plain_english
-			) 									AS tt;
+	account_id,
+	SUM(IF(type = 'PRIJEM', amount, 0))												AS incoming,
+	SUM(IF(type = 'VYDAJ', amount, 0))												AS outcoming,
+	SUM(IF(type = 'PRIJEM', amount, 0)) - SUM(IF(type = 'VYDAJ', amount, 0))		AS diference
+FROM trans
+WHERE account_id = 396
+GROUP BY 1; 
 
 -- 9. Continuing with the previous example, rank the top 10 account_ids based on their difference
+
+SELECT 
+	account_id,
+	SUM(IF(type = 'PRIJEM', amount, 0)) - SUM(IF(type = 'VYDAJ', amount, 0))		AS diference
+FROM trans
+GROUP BY account_id
+ORDER BY diference DESC; 

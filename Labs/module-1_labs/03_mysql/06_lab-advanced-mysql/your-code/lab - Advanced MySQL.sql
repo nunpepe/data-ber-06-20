@@ -52,7 +52,98 @@ ORDER BY profits_per_author DESC;
 -- Challenge 2 - Alternative Solution
 -- Approach: Derived tables
 
+-- Step 1: Calculate the royalties of each sales for each author
+
+SELECT 
+	a.au_id																	AS author_id,
+	t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100					AS troyalty,
+	t.title_id,
+	t.price,
+	t.advance,
+	t.royalty,
+	s.qty,
+	au_lname,
+	au_fname,
+	ta.title_id 												
+	ta.royaltyper
+FROM authors a
+	INNER JOIN titleauthor ta
+	ON a.au_id = ta.au_id
+		INNER JOIN titles t
+		ON ta.title_id = t.title_id
+			INNER JOIN sales s
+			ON t.title_id = s.title_id;
+
+-- Step 2: Aggregate the total royalties for each title for each author
+
+SELECT 
+	title_id,
+	author_id,
+	au_lname,
+	au_fname, 
+	advance,
+	SUM(troyalty)																AS total_royalties
+FROM (SELECT 
+			a.au_id																	AS author_id,
+			t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100					AS troyalty,
+			t.title_id,
+			t.price,
+			t.advance,
+			t.royalty,
+			s.qty,
+			au_lname,
+			au_fname,
+			ta.royaltyper
+		FROM authors a
+		INNER JOIN titleauthor ta
+			ON a.au_id = ta.au_id
+		INNER JOIN titles t
+			ON ta.title_id = t.title_id
+		INNER JOIN sales s
+			ON t.title_id = s.title_id) 	AS tmp
+GROUP BY 
+	title_id,
+	author_id
+ORDER BY total_royalties DESC;
 
 
+-- Step 3: Calculate the total profits of each author
 
-
+SELECT 
+	author_id																	AS AUTHOR_ID,
+	au_lname 																	AS LAST_NAME,
+	au_fname 																	AS FIRST_NAME,
+	sum(advance + total_royalties) 													AS PROFITS
+FROM (
+		SELECT 
+			title_id,
+			author_id,
+			au_lname,
+			au_fname, 
+			advance,
+			SUM(troyalty)																AS total_royalties
+		FROM (SELECT 
+					a.au_id																	AS author_id,
+					t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100					AS troyalty,
+					t.title_id,		
+					t.price,
+					t.advance,
+					t.royalty,
+					s.qty,
+					au_lname,
+					au_fname,
+					ta.royaltyper
+				FROM authors a
+				INNER JOIN titleauthor ta
+					ON a.au_id = ta.au_id
+				INNER JOIN titles t
+					ON ta.title_id = t.title_id
+				INNER JOIN sales s
+					ON t.title_id = s.title_id) 	AS tmp
+				GROUP BY 
+				title_id,
+				author_id) AS tmp2
+GROUP BY 
+	author_id
+ORDER BY "PROFITS" DESC
+LIMIT 3;
